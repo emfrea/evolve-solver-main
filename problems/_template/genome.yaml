@@ -1,0 +1,38 @@
+# The design space the agents explore. Two styles -- keep the one matching problem.yaml `genome.style`.
+#
+# ── STRUCTURED (a gene catalog) ────────────────────────────────────────────────────────────────
+# Genes live under `catalog:`. Each gene has `species_defining` (bool), a `role` (human description),
+# and `alleles` as a DICT of allele_name -> description. `species_defining: true` genes partition the
+# design space into species. The `unit` names in problem.yaml `splice` must appear here as gene keys.
+
+catalog:
+  search_paradigm:                 # example species-defining gene
+    species_defining: true
+    role: "The top-level algorithm family (makes two solvers different species)."
+    alleles:
+      greedy_local_search: "Construct greedily, then hill-climb with local moves."
+      simulated_annealing: "Local search accepting worse moves with a cooling probability."
+      random_restart: "Multi-start construction; keep the best of many random orders."
+
+  construction:                    # example non-defining gene (owns some component)
+    species_defining: false
+    role: "How an initial solution is built (owns TermA)."
+    alleles:
+      first_fit: "Greedy first-fit placement."
+      best_fit: "Tighter best-fit placement."
+
+  objective_strategy:
+    species_defining: false
+    role: "How the soft-cost terms are weighted / ordered (owns TermC)."
+    alleles:
+      weighted_sum: "Optimize the weighted sum of all components directly."
+      lexicographic: "Fix the highest-priority component first, then the rest."
+
+# ── FREEFORM (uncomment, set genome.style: freeform, and delete the `catalog:` block above) ─────
+# A species is described in prose instead of a catalog. The ideator returns {name, summary, phases}.
+# List the canonical phase names so problem.yaml `splice` has stable `unit` names to reference.
+#
+# phases:
+#   - construction        # produces TermA
+#   - conflict-repair     # produces TermB
+#   - load-balancing      # produces TermC

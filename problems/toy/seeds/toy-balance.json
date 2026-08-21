@@ -1,0 +1,8 @@
+{
+  "style": "structured",
+  "genes": {
+    "search_paradigm": {"category": "search_paradigm", "allele": "random_restart"},
+    "construction": {"category": "construction", "allele": "first_fit"},
+    "objective_strategy": {"category": "objective_strategy", "allele": "balance_first"}
+  }
+}

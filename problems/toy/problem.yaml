@@ -1,0 +1,80 @@
+name: toy
+description: >
+  toy-binpack -- weighted bin-packing with per-bin color limits. A tiny, pure-Python,
+  decomposable problem that exercises feasibility + 3 named cost components + all three
+  operators (evolve, crossover, new_species). No external binary, no HPC.
+
+instances:
+  dir: instances
+  all: [t01, t02, t03, t04, t05]
+  ext: json
+  gate: [t01, t03]
+
+# The objective decomposes into three named soft-cost terms (lower is better).
+components:
+  - Overfill        # load above a soft target (produced during placement / construction)
+  - ColorConflict   # bins exceeding max_color_per_bin (produced by the repair / search phase)
+  - Imbalance       # variance of bin loads (produced by the load-balancing / objective phase)
+
+# component -> (genome unit that owns it, human phase description used in crossover prompts)
+splice:
+  Overfill:      { unit: construction,        phase: "item-to-bin placement" }
+  ColorConflict: { unit: search_paradigm,     phase: "conflict-repair move phase" }
+  Imbalance:     { unit: objective_strategy,  phase: "load-balancing phase" }
+
+# Ordered levers: several units can move one component; the scheduler rotates as each is spent.
+levers:
+  Overfill:
+    - { unit: construction,       phase: "item-to-bin placement" }
+    - { unit: search_paradigm,    phase: "the improvement moves that relieve over-target bins" }
+  ColorConflict:
+    - { unit: search_paradigm,    phase: "conflict-repair move phase" }
+    - { unit: construction,       phase: "color-aware placement that avoids conflicts up front" }
+  Imbalance:
+    - { unit: objective_strategy, phase: "load-balancing phase" }
+    - { unit: search_paradigm,    phase: "balance-improving swaps in the search" }
+
+component_priors: { Overfill: 1.2, ColorConflict: 1.0, Imbalance: 0.8 }
+
+# Marker-delimited phases: the crossover units (every solver wraps each in START/END markers).
+phases:
+  - { id: P1, name: construction,    responsibility: "build the initial item-to-bin assignment",
+      boundary: "in: instance -> out: assignment (item -> bin)", components: [Overfill] }
+  - { id: P2, name: repair_search,   responsibility: "fix color conflicts and improve by local moves",
+      boundary: "in: assignment -> out: feasible improved assignment", components: [ColorConflict] }
+  - { id: P3, name: balance_output,  responsibility: "balance loads and write the solution file",
+      boundary: "in: assignment -> out: solution written", components: [Imbalance] }
+
+crossover: { family_key: search_paradigm }
+
+solver:
+  entry: solve.py
+  cli: "{python} {solve} {instance} {output} --seed {seed} --time-limit {time_limit} --threads {threads} [--progress-log {progress_log}]"
+
+evaluator:
+  module: evaluator
+  function: validate
+
+fitness:
+  metric: rank_sum        # rank_sum | normalized_cost
+
+scheduler:
+  n_instances: 5
+  full_feasible: 5
+  donor_min_feasible: 3
+  donor_gap: 0.15
+  evolve_max_attempts: 1
+  crossover_max_attempts: 1
+
+genome:
+  style: structured
+  file: genome.yaml
+
+compute:
+  backend: local
+  time_limit: 5
+  threads: 1
+  seed: 57
+
+libraries: >
+  the Python standard library only (json, random, math, heapq). No third-party packages.

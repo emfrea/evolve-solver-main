@@ -1,0 +1,24 @@
+# Structured gene catalog for toy-binpack. Species-defining genes fix the algorithm's
+# identity; tunable genes are refined (evolve) and transplanted across species (crossover).
+# The `unit` names referenced by problem.yaml `splice` must appear here as gene categories.
+catalog:
+  search_paradigm:
+    species_defining: true
+    role: "The metaheuristic that drives improvement (makes two solvers different species)."
+    alleles:
+      greedy_local_search: "Construct greedily, then hill-climb by moving/swapping items between bins."
+      simulated_annealing: "Local search accepting worse moves with a cooling probability."
+      random_restart: "Multi-start greedy construction, keep the best of many random orders."
+  construction:
+    species_defining: false
+    role: "How the initial packing is built (owns Overfill)."
+    alleles:
+      first_fit: "Place each item in the first bin that fits."
+      best_fit: "Place each item in the fullest bin that still fits (tighter packing)."
+      color_grouped: "Group items by color before placing, to reduce color spread."
+  objective_strategy:
+    species_defining: false
+    role: "How the three components are traded off (owns Imbalance / load balancing)."
+    alleles:
+      weighted_sum: "Optimize Overfill + ColorConflict + Imbalance directly."
+      balance_first: "Prioritize spreading load evenly across bins, then fix color/overfill."

@@ -1,0 +1,76 @@
+# ============================================================================
+# evolve-solver — central limits & caps
+#
+# Every "max" / cap / threshold the engine needs lives here, in one place.
+# Precedence (highest first):
+#   1. problems/<name>/problem.yaml  `limits:` block   (per-problem override, same keys)
+#   2. this file                                      (repository defaults)
+#   3. hard-coded fallbacks in framework/limits.py    (only if a key is missing)
+# For the three scheduler caps, a legacy `scheduler:` block in problem.yaml still wins.
+# ============================================================================
+
+agent:
+  build_timeout_s: 2400          # wall-clock cap per agent call (builder / evolver)
+  deliberate_noop_min_s: 120     # agent exited 0 after >= this AND changed nothing
+                                 #   => a deliberate "cannot improve" (a REAL attempt that
+                                 #   retires the lever). Shorter => agent_failed (not counted).
+  rate_limit_backoff_s: 1800     # sleep after a genuine account/session limit
+  reachability_wait_s: 1800      # total wait for the compute backend before aborting a step
+  reachability_poll_s: 120
+
+evaluation:
+  recheck_champion: true         # NOISE GUARD: re-evaluate the champion fresh whenever the
+                                 #   candidate would otherwise be promoted against its cache
+  collapse_ratio: 0.30           # ENV FAULT: fresh champion total cost > (1+ratio) x cached
+                                 #   (or lost feasibility) => the environment is poisoned
+                                 #   (licence tokens, node faults); void the step (non-attempt)
+  ratchet_baseline: true         # bar = better of (cached, fresh); baseline only moves UP
+
+compute:                          # RemoteSlurmBackend
+  max_run_wait_s: 7200           # poll deadline floor; scaled up with the walltime below
+  poll_interval_s: 30
+  max_poll_failures: 5           # consecutive transport failures before aborting
+  collect_verify_retries: 3      # re-checks of the expected solution count before giving up
+  collect_verify_wait_s: 60
+  scp_retries: 20                # results persist remotely: ride out a multi-minute VPN drop
+  scp_retry_delay_s: 60
+  net_retries: 8                 # idempotent command retries (mkdir / scp / setup)
+  net_retry_delay_s: 30
+  set_walltime: true             # pass `sbatch --time=` = time_limit + walltime_margin_s
+                                 #   (overrides a static #SBATCH --time sized for short runs)
+  walltime_margin_s: 600
+
+scheduler:
+  evolve_max_attempts: 2         # failed REAL evolve attempts on (species, component) => capped
+  crossover_max_attempts: 2
+  feas_repair_giveup: 3          # consecutive failed feasibility repairs => stop prioritising
+
+# ---- scheduler policy (feat/scheduler-policy) -------------------------------------------
+selection:
+  leader_bias: 1.5               # cross-species weight = leader_bias ** (N - rank): the leader
+                                 #   (the species you would submit) gets most steps ...
+  explore_floor: 1.5             # ... but never below this: laggards are crossover donors and
+                                 #   idea sources (without a floor 4 of 6 species got zero steps)
+  exhausted_weight: 1.0          # weight CAP for a fully-exhausted species (any live species wins)
+  diversity_decay: 0.7           # discount = decay ** (recent ops on the species, last 6 steps)
+
+targeting:
+  abs_base: 0.10                 # attractiveness = prior x affinity x (abs_base + donor_gap):
+                                 #   the floor lets a score-bearing component be pushed for
+                                 #   ABSOLUTE gains even when the species is already pool-best
+
+ladder:
+  wildcard_cap: 2                # free-form (no-lever) evolves per species between promotions,
+                                 #   tried when every lever is spent, BEFORE new_species
+  max_species: 6                 # population cap; at cap a spawn CULLS the worst species
+  new_species_cooldown: 3        # steps between spawns (let the last one be evaluated)
+  hopeless_attempts: 4           # worst-ranked, never-promoted species with this many real
+                                 #   attempts is replaced (self-cull -> new_species)
+
+crossover:
+  exhausted_any_donor: true      # once every lever is spent, ANY cheaper donor justifies a
+                                 #   graft (the donor_gap threshold applies to EARLY grafts only)
+  instance_xover_min_wins: 3     # instance-targeted graft: donor strictly better on >= this
+                                 #   many instances ...
+  instance_xover_margin: 0.02    # ... by more than this relative cost margin
+  instance_xover_cap: 2          # failed instance-grafts per (species, donor) between promotions

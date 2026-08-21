@@ -1,0 +1,61 @@
+{
+  "bins": 4,
+  "capacity": 10,
+  "max_color_per_bin": 3,
+  "items": [
+    {
+      "id": "x1",
+      "size": 5,
+      "color": "r",
+      "weight": 1.0
+    },
+    {
+      "id": "x2",
+      "size": 5,
+      "color": "b",
+      "weight": 1.0
+    },
+    {
+      "id": "x3",
+      "size": 4,
+      "color": "g",
+      "weight": 1.0
+    },
+    {
+      "id": "x4",
+      "size": 4,
+      "color": "y",
+      "weight": 1.0
+    },
+    {
+      "id": "x5",
+      "size": 6,
+      "color": "r",
+      "weight": 1.0
+    },
+    {
+      "id": "x6",
+      "size": 3,
+      "color": "b",
+      "weight": 1.0
+    },
+    {
+      "id": "x7",
+      "size": 5,
+      "color": "g",
+      "weight": 1.0
+    },
+    {
+      "id": "x8",
+      "size": 4,
+      "color": "y",
+      "weight": 1.0
+    },
+    {
+      "id": "x9",
+      "size": 3,
+      "color": "r",
+      "weight": 1.0
+    }
+  ]
+}

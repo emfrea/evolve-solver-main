@@ -1,0 +1,8 @@
+{
+  "style": "structured",
+  "genes": {
+    "search_paradigm": {"category": "search_paradigm", "allele": "greedy_local_search"},
+    "construction": {"category": "construction", "allele": "best_fit"},
+    "objective_strategy": {"category": "objective_strategy", "allele": "weighted_sum"}
+  }
+}

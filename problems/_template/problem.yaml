@@ -1,0 +1,90 @@
+# Problem definition for evolve-solver. Copy this folder to problems/<your-name>/ and fill in
+# every TODO. Validate as you go with:  python scripts/validate_problem_yaml.py --problem <name>
+
+name: TODO-problem-name
+description: >
+  TODO one-paragraph description of the optimization problem: what a solution is,
+  what makes it feasible, and what the objective minimizes.
+
+# Benchmark instances live as opaque files instances/<stem>.<ext>; the framework never parses
+# them -- only your evaluator and the solver do. `all` must list every stem; `gate` is a small
+# fast subset used to reject broken solvers cheaply before a full evaluation.
+instances:
+  dir: instances
+  all: []            # TODO: [inst01, inst02, ...]  (len must equal scheduler.n_instances)
+  ext: json          # TODO: instance file extension
+  gate: []           # TODO: 1-3 fast stems, a subset of `all`
+
+# Named soft-cost terms your objective decomposes into (lower is better). The scheduler attacks
+# these one at a time. Keep them genuinely separable so donor gaps + crossover are meaningful.
+components: []       # TODO: [TermA, TermB, TermC]
+
+# component -> which genome unit owns it + a human phase description (used in crossover prompts).
+# Keys must be a subset of `components`.
+splice: {}
+  # TODO:
+  # TermA: { unit: <gene-or-phase>, phase: "human description of the phase that produces TermA" }
+
+# OPTIONAL -- scheduler-policy extensions (see docs/architecture.md, "Escalation ladder").
+# levers: component -> ORDERED list of genome units that can move it. The scheduler tries the
+# first live lever and rotates as each is spent (a 1:1 map leaves the other units unreachable).
+# levers:
+#   TermA:
+#     - { unit: <gene-or-phase>, phase: "primary route to TermA" }
+#     - { unit: <other-gene>,    phase: "secondary route to TermA" }
+# component_priors: static weight of how strongly a component moves the REAL objective
+#   (default 1.0; < 1 demotes a component known to be anti-correlated with the score).
+# component_priors: { TermA: 1.5, TermC: 0.5 }
+# phases: marker-delimited structural phases (the crossover units). When declared, every
+#   solver must wrap each phase in `# ==== PHASE <id> <name> START/END ====` markers.
+# phases:
+#   - { id: P1, name: construction, responsibility: "...", boundary: "in: ... -> out: ...", components: [TermA] }
+# crossover.family_key: genome unit whose allele must match between donor and target for
+#   instance-targeted grafts (default: the first species-defining gene).
+# crossover: { family_key: search_paradigm }
+
+solver:
+  entry: solve.py
+  # CLI template. Named {slots} are filled by the runner; [ ...optional... ] is dropped when no
+  # progress log is requested. Keep {instance} {output} {seed} {time_limit} {threads}.
+  cli: "{python} {solve} {instance} {output} --seed {seed} --time-limit {time_limit} --threads {threads} [--progress-log {progress_log}]"
+
+evaluator:
+  module: evaluator     # -> evaluator.py
+  function: validate    # validate(instance_path, solution_path) -> {feasible, cost, components}
+
+fitness:
+  metric: rank_sum      # rank_sum (rank each solver per instance, infeasible=last) |
+                        # normalized_cost (mean cost_i/best_i + penalty; use when the real
+                        # competition ranks by normalized cost)
+  # opts: { infeasible_penalty: 1000.0 }   # normalized_cost only
+
+scheduler:
+  n_instances: 0        # TODO: must equal len(instances.all)
+  full_feasible: 0      # TODO: usually == n_instances (all instances must be feasible)
+  donor_min_feasible: 0 # TODO: min feasible_count for a species to donate a phase in crossover
+  donor_gap: 0.15       # crossover only when a donor is >=15% cheaper on the target component
+  evolve_max_attempts: 2
+  crossover_max_attempts: 2
+
+genome:
+  style: structured     # structured (gene catalog in genome.yaml) | freeform ({name,summary,phases})
+  file: genome.yaml
+
+compute:
+  backend: local        # local (runs solvers on this machine) | remote_slurm
+  time_limit: 60        # seconds per instance for a full evaluation
+  threads: 4
+  seed: 57
+  # remote_slurm extra fields:
+  # host: user@cluster
+  # remote_base: /scratch/<user>/evolve
+  # array_size: 30
+  # setup_script: setup.sh
+  # submit_script: submit.sh
+  # results_subdir: solutions
+  # env: {}
+
+# Free text injected into build/evolve prompts: which libraries the solver may use.
+libraries: >
+  TODO: e.g. "the Python standard library only" or "ortools, numpy".

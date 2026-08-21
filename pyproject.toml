@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evolve-solver"
+version = "0.1.0"
+description = "Problem-blind, LLM-driven island/speciation genetic algorithm that evolves whole solver programs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+# RemoteSlurmBackend shells out to the system `ssh`/`scp` binaries -- no extra Python deps.
+
+[tool.setuptools]
+packages = ["framework", "framework.agents", "framework.compute"]
